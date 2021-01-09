@@ -1,0 +1,5 @@
+add this to package.json in case of using react
+
+"src/**/*.scss": [
+    "stylelint --syntax scss --fix"
+]

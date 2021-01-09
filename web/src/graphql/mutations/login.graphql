@@ -1,0 +1,11 @@
+mutation Login($payload: UsernamePasswordInput!) {
+  login(payload: $payload) {
+    user {
+      ...RegularUser
+    }
+    errors {
+      field
+      message
+    }
+  }
+}

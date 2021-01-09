@@ -1,0 +1,16 @@
+{
+  "error": {
+    "username": {
+      "exists": "username exists",
+      "notExists": "username does not exists",
+      "length": "username must be greater than {{number}}"
+    },
+    "params": {
+      "missing": "missing required params"
+    },
+    "password": {
+      "wrong": "incorrect password",
+      "length": "password must be greater than {{number}}"
+    }
+  }
+}
