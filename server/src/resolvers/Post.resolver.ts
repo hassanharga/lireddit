@@ -7,25 +7,28 @@ import { Arg, Ctx, Mutation, Query, Resolver } from 'type-graphql';
 export class PostResolver {
   // get all posts
   @Query(() => [Post])
-  async posts(@Ctx() ctx: MyContext): Promise<Post[]> {
+  async posts(@Ctx() { em }: MyContext): Promise<Post[]> {
     // await sleep(3000);
-    return ctx.em.find(Post, {});
+    return await em.find(Post, {});
   }
 
   // get single posts
   @Query(() => Post, { nullable: true })
-  post(@Arg('id') id: number, @Ctx() ctx: MyContext): Promise<Post | null> {
-    return ctx.em.findOne(Post, { id });
+  async post(
+    @Arg('id') id: number,
+    @Ctx() { em }: MyContext,
+  ): Promise<Post | null> {
+    return await em.findOne(Post, { id });
   }
 
   // create  post
   @Mutation(() => Post)
   async createPost(
     @Arg('title') title: string,
-    @Ctx() ctx: MyContext,
+    @Ctx() { em }: MyContext,
   ): Promise<Post> {
-    const post = ctx.em.create(Post, { title });
-    await ctx.em.persistAndFlush(post);
+    const post = em.create(Post, { title });
+    await em.persistAndFlush(post);
     return post;
   }
 
@@ -34,13 +37,13 @@ export class PostResolver {
   async updatePost(
     @Arg('id') id: number,
     @Arg('title') title: string,
-    @Ctx() ctx: MyContext,
+    @Ctx() { em }: MyContext,
   ): Promise<Post | null> {
-    const post = await ctx.em.findOne(Post, { id });
+    const post = await em.findOne(Post, { id });
     if (!post) return null;
     if (title) {
       post.title = title;
-      await ctx.em.persistAndFlush(post);
+      await em.persistAndFlush(post);
     }
     return post;
   }

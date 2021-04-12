@@ -6,7 +6,7 @@ export const db = {
   dbName: 'lireddit',
   type: 'postgresql',
   user: 'postgres',
-  password: '1234',
+  password: 'root',
 };
 
 export const sessionKey = 'hassan';

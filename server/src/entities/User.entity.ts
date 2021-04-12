@@ -12,7 +12,7 @@ export class User {
   @Property({ type: 'text', unique: true })
   username!: string;
 
-  // we will not be exposed it in qraphql but will be added to DB
+  // it will not be exposed in qraphql but it will be added to DB
   @Property({ type: 'text' })
   password!: string;
 
