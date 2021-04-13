@@ -3,7 +3,6 @@ import {
   Arg,
   Ctx,
   Field,
-  InputType,
   Mutation,
   ObjectType,
   Query,
@@ -13,15 +12,8 @@ import { User } from '../entities/User.entity';
 import { decryptData, encryptData } from '../utils/encrypt';
 import { __ } from 'i18n';
 import { cookieName } from '../constants';
-
-@InputType()
-class UsernamePasswordInput {
-  @Field()
-  username: string;
-
-  @Field()
-  password: string;
-}
+import { UsernamePasswordInput } from './UsernamePasswordInput';
+import { validateRegister } from '../utils/validateRegister';
 
 @ObjectType()
 class FieldError {
@@ -43,6 +35,12 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => Boolean)
+  async forgetPassword(@Arg('email') email: string, @Ctx() { em }: MyContext) {
+    await em.findOne(User, { email });
+    return true;
+  }
+
   @Query(() => User, { nullable: true })
   async me(@Ctx() { em, req }: MyContext): Promise<User | null> {
     if (!req.session.userId) {
@@ -57,28 +55,10 @@ export class UserResolver {
     @Arg('payload') payload: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext,
   ): Promise<UserResponse> {
-    // check for username length
-    if (payload.username.length < 2) {
-      return {
-        errors: [
-          {
-            field: 'username',
-            message: __('error.username.length', { number: '2' }),
-          },
-        ],
-      };
-    }
-
-    // check for password length
-    if (payload.password.length < 2) {
-      return {
-        errors: [
-          {
-            field: 'password',
-            message: __('error.password.length', { number: '2' }),
-          },
-        ],
-      };
+    // validate payload
+    const errors = validateRegister(payload);
+    if (errors) {
+      return { errors };
     }
 
     // hash password
@@ -86,6 +66,7 @@ export class UserResolver {
     const user = em.create(User, {
       username: payload.username,
       password: hashedPassword,
+      email: payload.email,
     });
     try {
       await em.persistAndFlush(user);
@@ -106,16 +87,22 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('payload') payload: UsernamePasswordInput,
+    @Arg('usernameOrEmail') usernameOrEmail: string,
+    @Arg('password') password: string,
     @Ctx() { em, req }: MyContext,
   ): Promise<UserResponse> {
-    if (!payload.password || !payload.username) {
+    if (!password || !usernameOrEmail) {
       return {
         errors: [{ field: 'params', message: __('error.params.missing') }],
       };
     }
 
-    const user = await em.findOne(User, { username: payload.username });
+    const user = await em.findOne(
+      User,
+      usernameOrEmail.includes('@')
+        ? { email: usernameOrEmail }
+        : { username: usernameOrEmail },
+    );
     if (!user) {
       return {
         errors: [
@@ -124,7 +111,7 @@ export class UserResolver {
       };
     }
 
-    const valid = await decryptData(user.password, payload.password);
+    const valid = await decryptData(user.password, password);
     if (!valid) {
       return {
         errors: [{ field: 'password', message: __('error.password.wrong') }],

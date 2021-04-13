@@ -1,12 +1,14 @@
 import React from "react";
 import { Box, Button } from "@chakra-ui/core";
 import { Form, Formik } from "formik";
-import Wrapper from "../components/Wrapper";
-import InputField from "../components/Form/InputField";
-import { useRegisterMutation } from "../generated/graphql";
-import { toErrorMap } from "../utils/toErrorMap";
+import { withUrqlClient } from "next-urql";
 import { useRouter } from "next/router";
+import InputField from "../components/Form/InputField";
+import Wrapper from "../components/Wrapper";
 import routes from "../constants/routes";
+import { useRegisterMutation } from "../generated/graphql";
+import { createUrqlClient } from "../utils/createUrqlClient";
+import { toErrorMap } from "../utils/toErrorMap";
 
 export const Register: React.FC = () => {
   const [, register] = useRegisterMutation();
@@ -54,4 +56,4 @@ export const Register: React.FC = () => {
   );
 };
 
-export default Register;
+export default  withUrqlClient(createUrqlClient)(Register);

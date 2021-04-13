@@ -3,9 +3,13 @@ import { Box, Button, Flex, Link } from '@chakra-ui/core';
 import NextLink from 'next/link';
 import routes from '../constants/routes';
 import { useLogoutMutation, useMeQuery } from '../generated/graphql';
+import { isServer } from '../utils/isServer';
 
 const NavBar = () => {
-  const [{ data, fetching }] = useMeQuery();
+  const [{ data, fetching }] = useMeQuery( {
+    // tell next not to run this on the server
+    pause: isServer()
+  });
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
   let body = null;
   if (fetching) {

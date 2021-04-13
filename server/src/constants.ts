@@ -14,3 +14,8 @@ export const maxAge = 1000 * 60 * 60 * 24 * 365 * 10; // 10 years;
 export const cookieName = 'qid';
 
 export const origin = 'http://localhost:3000';
+
+export const nodeMailerAuth = {
+  user: 'pnmndrtfvgwmb3l3@ethereal.email',
+  pass: 'SBEXXUWj8CxtRQnhd1',
+};
