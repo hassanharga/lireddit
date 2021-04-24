@@ -1,30 +1,42 @@
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
 import { Field, ObjectType } from 'type-graphql';
+import {
+  Entity,
+  Column,
+  CreateDateColumn,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  BaseEntity,
+  OneToMany,
+} from 'typeorm';
+import { Post } from './Post.entity';
 
 @ObjectType()
 @Entity()
-export class User {
+export class User extends BaseEntity {
   @Field()
-  @PrimaryKey()
+  @PrimaryGeneratedColumn()
   id!: number;
 
   @Field()
-  @Property({ type: 'text', unique: true })
+  @Column({ unique: true })
   username!: string;
 
   @Field()
-  @Property({ type: 'text', unique: true })
+  @Column({ unique: true })
   email!: string;
 
   // it will not be exposed in qraphql but it will be added to DB
-  @Property({ type: 'text' })
+  @Column()
   password!: string;
 
-  @Field(() => String)
-  @Property({ type: 'date' })
-  createdAt = new Date();
+  @OneToMany(() => Post, (post) => post.creator)
+  posts: Post[];
 
   @Field(() => String)
-  @Property({ type: 'date', onUpdate: () => new Date() })
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @Field(() => String)
+  @UpdateDateColumn()
   updatedAt = new Date();
 }

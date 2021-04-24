@@ -2,10 +2,10 @@ export const __prod__ = process.env.NODE_ENV === 'production';
 
 export const port = process.env.PORT || 3001;
 
-export const db = {
-  dbName: 'lireddit',
-  type: 'postgresql',
-  user: 'postgres',
+export const typeOrmConfig = {
+  type: 'postgres' as const,
+  database: 'lireddit2',
+  username: 'postgres',
   password: 'root',
 };
 

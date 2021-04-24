@@ -46,7 +46,7 @@ export class UserResolver {
   async changePassword(
     @Arg('token') token: string,
     @Arg('newPassword') newPassword: string,
-    @Ctx() { em, redis, req }: MyContext,
+    @Ctx() { redis, req }: MyContext,
   ): Promise<UserResponse> {
     // check for password length
     if (newPassword.length < 2) {
@@ -73,7 +73,7 @@ export class UserResolver {
       };
     }
 
-    const user = await em.findOne(User, { id: +userId });
+    const user = await User.findOne(+userId);
     if (!user) {
       return {
         errors: [
@@ -85,7 +85,7 @@ export class UserResolver {
       };
     }
     user.password = await encryptData(newPassword);
-    await em.persistAndFlush(user);
+    await user.save();
     // login user after change password
     req.session.userId = user.id;
     // remove key from redis
@@ -96,9 +96,9 @@ export class UserResolver {
   @Mutation(() => Boolean)
   async forgetPassword(
     @Arg('email') email: string,
-    @Ctx() { em, redis }: MyContext,
+    @Ctx() { redis }: MyContext,
   ) {
-    const user = await em.findOne(User, { email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       // email is not in the DB
       return false;
@@ -122,18 +122,18 @@ export class UserResolver {
   }
 
   @Query(() => User, { nullable: true })
-  async me(@Ctx() { em, req }: MyContext): Promise<User | null> {
+  async me(@Ctx() { req }: MyContext): Promise<User | undefined | null> {
     if (!req.session.userId) {
       return null;
     }
-    const user = await em.findOne(User, { id: req.session.userId });
+    const user = await User.findOne(req.session.userId);
     return user;
   }
 
   @Mutation(() => UserResponse)
   async register(
     @Arg('payload') payload: UsernamePasswordInput,
-    @Ctx() { em, req }: MyContext,
+    @Ctx() { req }: MyContext,
   ): Promise<UserResponse> {
     // validate payload
     const errors = validateRegister(payload);
@@ -143,15 +143,15 @@ export class UserResolver {
 
     // hash password
     const hashedPassword = await encryptData(payload.password);
-    const user = em.create(User, {
+    const user = User.create({
       username: payload.username,
       password: hashedPassword,
       email: payload.email,
     });
     try {
-      await em.persistAndFlush(user);
+      await user.save();
     } catch (error) {
-      console.error('err[register]', error.message);
+      // console.error('err[register]', error);
       //  || error.detail.includes('already exists')
       if (error.code === '23505') {
         return {
@@ -169,7 +169,7 @@ export class UserResolver {
   async login(
     @Arg('usernameOrEmail') usernameOrEmail: string,
     @Arg('password') password: string,
-    @Ctx() { em, req }: MyContext,
+    @Ctx() { req }: MyContext,
   ): Promise<UserResponse> {
     if (!password || !usernameOrEmail) {
       return {
@@ -177,12 +177,11 @@ export class UserResolver {
       };
     }
 
-    const user = await em.findOne(
-      User,
-      usernameOrEmail.includes('@')
+    const user = await User.findOne({
+      where: usernameOrEmail.includes('@')
         ? { email: usernameOrEmail }
         : { username: usernameOrEmail },
-    );
+    });
     if (!user) {
       return {
         errors: [
