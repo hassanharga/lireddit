@@ -14,6 +14,9 @@ export const maxAge = 1000 * 60 * 60 * 24 * 365 * 10; // 10 years;
 export const cookieName = 'qid';
 
 export const origin = 'http://localhost:3000';
+export const changePasswordUrl = `${origin}/change-password`;
+export const changePasswordPrefix = 'change-password:';
+export const changePasswordTokenExpireDate = 1000 * 60 * 60 * 24 * 3; // 3 days;
 
 export const nodeMailerAuth = {
   user: 'pnmndrtfvgwmb3l3@ethereal.email',

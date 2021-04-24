@@ -11,9 +11,16 @@ import {
 import { User } from '../entities/User.entity';
 import { decryptData, encryptData } from '../utils/encrypt';
 import { __ } from 'i18n';
-import { cookieName } from '../constants';
+import {
+  cookieName,
+  changePasswordPrefix,
+  changePasswordUrl,
+  changePasswordTokenExpireDate,
+} from '../constants';
 import { UsernamePasswordInput } from './UsernamePasswordInput';
 import { validateRegister } from '../utils/validateRegister';
+import { sendEmail } from '../utils/sendEmail';
+import { v4 } from 'uuid';
 
 @ObjectType()
 class FieldError {
@@ -35,9 +42,82 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg('token') token: string,
+    @Arg('newPassword') newPassword: string,
+    @Ctx() { em, redis, req }: MyContext,
+  ): Promise<UserResponse> {
+    // check for password length
+    if (newPassword.length < 2) {
+      return {
+        errors: [
+          {
+            field: 'newPassword',
+            message: __('error.password.length', { number: '2' }),
+          },
+        ],
+      };
+    }
+
+    const userId = await redis.get(changePasswordPrefix + token);
+    // console.log(`user from redis`, userId);
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: __('error.token.inValid'),
+          },
+        ],
+      };
+    }
+
+    const user = await em.findOne(User, { id: +userId });
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: __('error.token.notExist'),
+          },
+        ],
+      };
+    }
+    user.password = await encryptData(newPassword);
+    await em.persistAndFlush(user);
+    // login user after change password
+    req.session.userId = user.id;
+    // remove key from redis
+    await redis.del(changePasswordPrefix + token);
+    return { user };
+  }
+
   @Mutation(() => Boolean)
-  async forgetPassword(@Arg('email') email: string, @Ctx() { em }: MyContext) {
-    await em.findOne(User, { email });
+  async forgetPassword(
+    @Arg('email') email: string,
+    @Ctx() { em, redis }: MyContext,
+  ) {
+    const user = await em.findOne(User, { email });
+    if (!user) {
+      // email is not in the DB
+      return false;
+    }
+
+    // create <a> tag
+    // <a href="http://localhost:3000/change-password/:token">reset password</a>
+    // store token in redis
+    const token = v4();
+    await redis.set(
+      changePasswordPrefix + token,
+      user.id,
+      'ex',
+      changePasswordTokenExpireDate,
+    );
+    await sendEmail(
+      email,
+      `<a href="${changePasswordUrl}/${token}">reset password</a>`,
+    );
     return true;
   }
 
@@ -106,7 +186,7 @@ export class UserResolver {
     if (!user) {
       return {
         errors: [
-          { field: 'username', message: __('error.username.notExists') },
+          { field: 'usernameOrEmail', message: __('error.username.notExists') },
         ],
       };
     }

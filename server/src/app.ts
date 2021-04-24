@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { MikroORM } from '@mikro-orm/core';
 import { port } from './constants';
 import mikroConfig from './mikro-orm.config';
-import app from './services/express';
+import app, { redis } from './services/express';
 import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import { PostResolver } from './resolvers/Post.resolver';
@@ -28,7 +28,7 @@ const main = async () => {
       validate: false,
     }),
     // context is special object that is accessible for all resolvers
-    context: ({ req, res }) => ({ em: orm.em, req, res }),
+    context: ({ req, res }) => ({ em: orm.em, req, res, redis }),
   });
 
   apolloServer.applyMiddleware({ app, cors: false });

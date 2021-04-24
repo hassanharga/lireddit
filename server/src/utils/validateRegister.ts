@@ -12,21 +12,21 @@ export const validateRegister = (payload: UsernamePasswordInput) => {
     ];
   }
 
-  // check for email length
-  if (payload.username.includes('@')) {
-    return [
-      {
-        field: 'username',
-        message: __('error.username.inValid'),
-      },
-    ];
-  }
-
+  // check for username length
   if (payload.username.length < 2) {
     return [
       {
         field: 'username',
         message: __('error.username.length', { number: '2' }),
+      },
+    ];
+  }
+
+  if (payload.username && payload.username.includes('@')) {
+    return [
+      {
+        field: 'username',
+        message: __('error.username.inValid'),
       },
     ];
   }

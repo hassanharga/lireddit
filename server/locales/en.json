@@ -11,6 +11,12 @@
     "password": {
       "wrong": "incorrect password",
       "length": "password must be greater than {{number}}"
+    },
+    "email": {
+      "inValid": "Invalid Email"
+    },
+    "token": {
+      "inValid": "Inavlid Token"
     }
   }
 }
