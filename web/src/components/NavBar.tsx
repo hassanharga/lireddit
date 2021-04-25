@@ -6,9 +6,9 @@ import { useLogoutMutation, useMeQuery } from '../generated/graphql';
 import { isServer } from '../utils/isServer';
 
 const NavBar = () => {
-  const [{ data, fetching }] = useMeQuery( {
+  const [{ data, fetching }] = useMeQuery({
     // tell next not to run this on the server
-    pause: isServer()
+    pause: isServer(),
   });
   const [{ fetching: logoutFetching }, logout] = useLogoutMutation();
   let body = null;
@@ -45,7 +45,7 @@ const NavBar = () => {
   }
 
   return (
-    <Flex bg='tan' p={4}>
+    <Flex bg='tan' position='sticky' top={0} zIndex={1} p={4}>
       <Box ml='auto'>{body}</Box>
     </Flex>
   );

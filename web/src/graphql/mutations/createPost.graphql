@@ -1,0 +1,10 @@
+mutation CreatePost($payload: PostInput!) {
+  createPost(payload: $payload) {
+    id
+    title
+    text
+    creatorId
+    points
+    createdAt
+  }
+}

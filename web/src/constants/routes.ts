@@ -4,4 +4,5 @@ export default {
   LOGIN: '/login',
   'FORGET-PASSWORD': '/forget-password',
   'CHANGE-PASSWORD': '/change-password',
+  'CREATE-POST': '/create-post',
 };
