@@ -28,7 +28,7 @@ export const Login: React.FC = () => {
             if (typeof router.query.next === 'string') {
               router.push(router.query.next);
             } else {
-              router.push(routes['CREATE-POST']);
+              router.push(routes.LOGIN);
             }
           }
         }}

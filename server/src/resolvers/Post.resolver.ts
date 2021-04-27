@@ -1,16 +1,20 @@
-import { isAuth } from '../middlewares/isAuth';
 import { MyContext } from 'src/types';
 import {
   Arg,
   Ctx,
   Field,
+  FieldResolver,
   InputType,
+  Int,
   Mutation,
   Query,
   Resolver,
+  Root,
   UseMiddleware,
 } from 'type-graphql';
+import { getConnection } from 'typeorm';
 import { Post } from '../entities/Post.entity';
+import { isAuth } from '../middlewares/isAuth';
 
 @InputType()
 class PostInput {
@@ -20,13 +24,32 @@ class PostInput {
   @Field()
   text: string;
 }
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  // this is gonna called every time we have post object
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post) {
+    return root.text.slice(0, 50);
+  }
+
   // get all posts
   @Query(() => [Post])
-  async posts(): Promise<Post[]> {
-    // await sleep(3000);
-    return await Post.find();
+  async posts(
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, { nullable: true }) cursor: string | null,
+  ): Promise<Post[]> {
+    const realLimit = Math.min(50, limit);
+
+    const query = getConnection()
+      .getRepository(Post)
+      .createQueryBuilder('p')
+      .orderBy('"createdAt"', 'DESC')
+      .take(realLimit);
+
+    if (cursor) {
+      query.where('"createdAt" < :cursor', { cursor: new Date(+cursor) });
+    }
+    return await query.getMany();
   }
 
   // get single posts

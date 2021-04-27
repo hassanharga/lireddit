@@ -8,16 +8,20 @@ import { UserResolver } from './resolvers/User.resolver';
 import { createConnection } from 'typeorm';
 import { User } from './entities/User.entity';
 import { Post } from './entities/Post.entity';
+import path from 'path';
 
 // main function
 const main = async () => {
   // connect to DB
-  await createConnection({
+  const conn = await createConnection({
     ...typeOrmConfig,
     logging: true,
     synchronize: true,
+    migrations: [path.join(__dirname, './migrations/*')],
     entities: [User, Post],
   });
+
+  await conn.runMigrations();
 
   // run migrations
   // migration looking up in the DB and comparing it with the entities we have and make it match exactly and if it's not match it create sql to make it match
