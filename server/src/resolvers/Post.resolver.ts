@@ -7,6 +7,7 @@ import {
   InputType,
   Int,
   Mutation,
+  ObjectType,
   Query,
   Resolver,
   Root,
@@ -24,6 +25,16 @@ class PostInput {
   @Field()
   text: string;
 }
+
+@ObjectType()
+class PaginatedPosts {
+  @Field(() => [Post])
+  posts: Post[];
+
+  @Field()
+  hasMore: boolean;
+}
+
 @Resolver(Post)
 export class PostResolver {
   // this is gonna called every time we have post object
@@ -33,23 +44,53 @@ export class PostResolver {
   }
 
   // get all posts
-  @Query(() => [Post])
+  @Query(() => PaginatedPosts)
   async posts(
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', () => String, { nullable: true }) cursor: string | null,
-  ): Promise<Post[]> {
+  ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
+    const realLimitPlusOne = realLimit + 1;
 
-    const query = getConnection()
-      .getRepository(Post)
-      .createQueryBuilder('p')
-      .orderBy('"createdAt"', 'DESC')
-      .take(realLimit);
-
+    const replacements: any[] = [realLimitPlusOne];
     if (cursor) {
-      query.where('"createdAt" < :cursor', { cursor: new Date(+cursor) });
+      replacements.push(new Date(+cursor));
     }
-    return await query.getMany();
+
+    const posts = await getConnection().query(
+      `
+      SELECT p.*,
+      json_build_object(
+        'id',  u.id,
+        'username',  u.username,
+        'email',  u.email
+        ) creator
+      FROM post p
+      ${cursor ? ` where p."createdAt" < $2` : ''}
+      INNER JOIN public.user u on u.id = p."creatorId"
+      ORDER BY p."createdAt" DESC 
+      LIMIT $1
+    `,
+      replacements,
+    );
+
+    // const query = getConnection()
+    //   .getRepository(Post)
+    //   .createQueryBuilder('p')
+    //   .innerJoin('p.creator', 'u', 'u.id = p."creatorId"')
+    //   .orderBy('p."createdAt"', 'DESC')
+    //   .take(realLimitPlusOne);
+
+    // if (cursor) {
+    //   query.where('p."createdAt" < :cursor', { cursor: new Date(+cursor) });
+    // }
+
+    // const posts = await query.getMany();
+    // console.log(`posts`, posts);
+    return {
+      posts: posts.slice(0, realLimit),
+      hasMore: posts.length === realLimitPlusOne,
+    };
   }
 
   // get single posts

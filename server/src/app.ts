@@ -22,6 +22,7 @@ const main = async () => {
   });
 
   await conn.runMigrations();
+  // await Post.delete({});
 
   // run migrations
   // migration looking up in the DB and comparing it with the entities we have and make it match exactly and if it's not match it create sql to make it match
