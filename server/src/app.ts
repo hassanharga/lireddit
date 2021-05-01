@@ -9,6 +9,7 @@ import { createConnection } from 'typeorm';
 import { User } from './entities/User.entity';
 import { Post } from './entities/Post.entity';
 import path from 'path';
+import { Updoot } from './entities/Updoot.entiny';
 
 // main function
 const main = async () => {
@@ -18,7 +19,7 @@ const main = async () => {
     logging: true,
     synchronize: true,
     migrations: [path.join(__dirname, './migrations/*')],
-    entities: [User, Post],
+    entities: [User, Post, Updoot],
   });
 
   await conn.runMigrations();
