@@ -166,8 +166,8 @@ export class PostResolver {
 
   // get single posts
   @Query(() => Post, { nullable: true })
-  async post(@Arg('id') id: number): Promise<Post | undefined> {
-    return await Post.findOne(id);
+  async post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
+    return await Post.findOne(id, { relations: ['creator'] });
   }
 
   // create  post
@@ -186,24 +186,49 @@ export class PostResolver {
 
   // update  post
   @Mutation(() => Post, { nullable: true })
+  @UseMiddleware(isAuth)
   async updatePost(
-    @Arg('id') id: number,
-    @Arg('title') title: string,
+    @Arg('id', () => Int) id: number,
+    @Arg('title', () => String, { nullable: true }) title: string,
+    @Arg('text', () => String, { nullable: true }) text: string,
+    @Ctx() { req }: MyContext,
   ): Promise<Post | null> {
     const post = await Post.findOne(id);
     if (!post) return null;
-    if (title) {
+    if ((title || text) && post.id === req.session.userId) {
       post.title = title;
+      post.text = text;
       await post.save();
-      // await Post.update({ id }, { title });
+      // await Post.update({ id }, { title, text });
     }
     return post;
   }
 
-  // delete  post
+  // delete post
   @Mutation(() => Boolean)
-  async deletePost(@Arg('id') id: number): Promise<boolean> {
-    await Post.delete(id);
+  @UseMiddleware(isAuth)
+  async deletePost(
+    @Arg('id', () => Int) id: number,
+    @Ctx() { req }: MyContext,
+  ): Promise<boolean> {
+    const userId = req.session.userId;
+
+    // cascade way
+    // await Post.delete({ id, creatorId: userId });
+
+    const post = await Post.findOne(id);
+    if (!post) {
+      return false;
+    }
+    if (post.creatorId !== userId) {
+      throw new Error('not authorized');
+    }
+
+    await post.remove();
+
+    // not cascade way
+    // await Updoot.delete({ postId: id });
+    // await Post.delete({ id });
     return true;
   }
 }

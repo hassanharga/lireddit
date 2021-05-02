@@ -5,4 +5,6 @@ export default {
   'FORGET-PASSWORD': '/forget-password',
   'CHANGE-PASSWORD': '/change-password',
   'CREATE-POST': '/create-post',
+  'Post-Details': '/post/[id]',
+  'Edit-post': '/post/edit',
 };
