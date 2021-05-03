@@ -15,6 +15,7 @@ import {
 import { getConnection } from 'typeorm';
 import { Post } from '../entities/Post.entity';
 import { Updoot } from '../entities/Updoot.entiny';
+import { User } from '../entities/User.entity';
 import { isAuth } from '../middlewares/isAuth';
 import { MyContext } from '../types';
 
@@ -42,6 +43,30 @@ export class PostResolver {
   @FieldResolver(() => String)
   textSnippet(@Root() root: Post) {
     return root.text.slice(0, 50);
+  }
+
+  // when we use that it will get the data correctly
+  // but it will run it with every single post
+  // so we will user dataloader library
+  @FieldResolver(() => User)
+  async creator(@Root() post: Post, @Ctx() { userLoader }: MyContext) {
+    // return await User.findOne(post.creatorId);
+    return userLoader.load(post.creatorId);
+  }
+
+  @FieldResolver(() => Int, { nullable: true })
+  async voteStatus(
+    @Root() post: Post,
+    @Ctx() { updootLoader, req }: MyContext,
+  ) {
+    if (!req.session.userId) {
+      return null;
+    }
+    const updoot = await updootLoader.load({
+      postId: post.id,
+      userId: req.session.userId,
+    });
+    return updoot ? updoot.value : null;
   }
 
   @Mutation(() => Boolean)
@@ -103,61 +128,27 @@ export class PostResolver {
   async posts(
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', () => String, { nullable: true }) cursor: string | null,
-    @Ctx() { req }: MyContext,
   ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
 
-    const { userId } = req.session;
     const replacements: any[] = [realLimitPlusOne];
-    if (userId) {
-      replacements.push(userId);
-    }
-    let cursorIdx = 3;
+
     if (cursor) {
       replacements.push(new Date(+cursor));
-      cursorIdx = replacements.length;
     }
 
     const posts = await getConnection().query(
       `
-      SELECT p.*,
-      json_build_object(
-        'id',  u.id,
-        'username',  u.username,
-        'email',  u.email
-        ) creator,
-      ${
-        userId
-          ? `(
-              SELECT value 
-              FROM updoot
-              WHERE "userId" = $2 AND "postId" = p.id
-            ) "voteStatus"`
-          : `null as "voteStatus"`
-      }
+      SELECT p.*
       FROM post p
-      INNER JOIN public.user u on u.id = p."creatorId"
-      ${cursor ? ` where p."createdAt" < $${cursorIdx}` : ''}
+      ${cursor ? ` where p."createdAt" < $2` : ''}
       ORDER BY p."createdAt" DESC 
       LIMIT $1
     `,
       replacements,
     );
 
-    // const query = getConnection()
-    //   .getRepository(Post)
-    //   .createQueryBuilder('p')
-    //   .innerJoin('p.creator', 'u', 'u.id = p."creatorId"')
-    //   .orderBy('p."createdAt"', 'DESC')
-    //   .take(realLimitPlusOne);
-
-    // if (cursor) {
-    //   query.where('p."createdAt" < :cursor', { cursor: new Date(+cursor) });
-    // }
-
-    // const posts = await query.getMany();
-    // console.log(`posts`, posts);
     return {
       posts: posts.slice(0, realLimit),
       hasMore: posts.length === realLimitPlusOne,
@@ -167,7 +158,7 @@ export class PostResolver {
   // get single posts
   @Query(() => Post, { nullable: true })
   async post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
-    return await Post.findOne(id, { relations: ['creator'] });
+    return await Post.findOne(id);
   }
 
   // create  post
@@ -195,12 +186,13 @@ export class PostResolver {
   ): Promise<Post | null> {
     const post = await Post.findOne(id);
     if (!post) return null;
-    if ((title || text) && post.id === req.session.userId) {
+    if ((title || text) && post.creatorId === req.session.userId) {
       post.title = title;
       post.text = text;
       await post.save();
       // await Post.update({ id }, { title, text });
     }
+
     return post;
   }
 

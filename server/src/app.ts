@@ -10,6 +10,8 @@ import { User } from './entities/User.entity';
 import { Post } from './entities/Post.entity';
 import path from 'path';
 import { Updoot } from './entities/Updoot.entiny';
+import { createUserLoader } from './utils/createUserLoader';
+import { createUpdootLoader } from './utils/createUpdootLoader';
 
 // main function
 const main = async () => {
@@ -39,7 +41,13 @@ const main = async () => {
       validate: false,
     }),
     // context is special object that is accessible for all resolvers
-    context: ({ req, res }) => ({ req, res, redis }),
+    context: ({ req, res }) => ({
+      req,
+      res,
+      redis,
+      userLoader: createUserLoader(),
+      updootLoader: createUpdootLoader(),
+    }),
   });
 
   apolloServer.applyMiddleware({ app, cors: false });

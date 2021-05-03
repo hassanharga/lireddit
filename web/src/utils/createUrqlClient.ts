@@ -1,4 +1,4 @@
-import { cacheExchange } from '@urql/exchange-graphcache';
+import { cacheExchange, Cache } from '@urql/exchange-graphcache';
 import Router from 'next/router';
 import { dedupExchange, Exchange, fetchExchange } from 'urql';
 import { pipe, tap } from 'wonka';
@@ -16,6 +16,14 @@ import { betterUpdatequery } from './betterUpdatequery';
 import { cursorPagination } from './cursorPagination';
 import gql from 'graphql-tag';
 import { isServer } from './isServer';
+
+const invalidateAllPosts = (cache: Cache) => {
+  const allFields = cache.inspectFields('Query');
+  const fieldInfos = allFields.filter((info) => info.fieldName === 'posts');
+  fieldInfos.forEach((fi) => {
+    cache.invalidate('Query', 'posts', fi.arguments || {});
+  });
+};
 
 // handle error globally
 const errorExchange: Exchange = ({ forward }) => ($ops) => {
@@ -89,13 +97,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
               }
             },
             createPost: (_result, _args, cache, _info) => {
-              const allFields = cache.inspectFields('Query');
-              const fieldInfos = allFields.filter(
-                (info) => info.fieldName === 'posts'
-              );
-              fieldInfos.forEach((fi) => {
-                cache.invalidate('Query', 'posts', fi.arguments || {});
-              });
+              invalidateAllPosts(cache);
             },
             logout: (result, _args, cache, _info) => {
               betterUpdatequery<LogoutMutation, MeQuery>(
@@ -121,6 +123,7 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                   };
                 }
               );
+              invalidateAllPosts(cache);
             },
             register: (result, _args, cache, _info) => {
               betterUpdatequery<RegisterMutation, MeQuery>(

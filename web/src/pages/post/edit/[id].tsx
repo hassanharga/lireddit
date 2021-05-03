@@ -5,7 +5,6 @@ import router from 'next/router';
 import React from 'react';
 import InputField from '../../../components/Form/InputField';
 import Layout from '../../../components/Layout';
-import routes from '../../../constants/routes';
 import { useUpdatePostMutation } from '../../../generated/graphql';
 import { createUrqlClient } from '../../../utils/createUrqlClient';
 import { useGetPostFromUrl } from '../../../utils/useGetPostFromUrl';
@@ -33,7 +32,7 @@ const EditPost = () => {
                   id: data.post.id,
                 });
                 if (!error) {
-                  router.push(routes.HOME);
+                  router.back();
                 }
               }
             }}
