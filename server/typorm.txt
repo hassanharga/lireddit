@@ -1,2 +1,3 @@
 create fake migration with orm 
         npx typeorm migration:create -n FakePosts
+        npx typeorm migration:generate -n Initial

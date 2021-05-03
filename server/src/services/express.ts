@@ -1,13 +1,13 @@
-import express from 'express';
-import i18n from 'i18n';
-import cors from 'cors';
-import Redis from 'ioredis';
-import session from 'express-session';
 import connectRedis from 'connect-redis';
-import { sessionKey, maxAge, __prod__, origin, cookieName } from '../constants';
+import cors from 'cors';
+import express from 'express';
+import session from 'express-session';
+import i18n from 'i18n';
+import Redis from 'ioredis';
+import { cookieName, maxAge, __prod__ } from '../constants';
 
 const RedisStore = connectRedis(session);
-export const redis: any = new Redis();
+export const redis: any = new Redis(process.env.REDIS);
 
 const app = express();
 
@@ -19,9 +19,12 @@ i18n.configure({
   objectNotation: true,
 });
 
+// if we r using server like nginx we will set this
+// app.set('proxy', 1);
+
 app.use(
   cors({
-    origin,
+    origin: process.env.ORIGIN,
     credentials: true,
   }),
 );
@@ -40,7 +43,7 @@ app.use(
       secure: __prod__, // will work only in https,
     },
     resave: false,
-    secret: sessionKey,
+    secret: process.env.SESSION_SECRET,
   }),
 );
 

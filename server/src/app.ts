@@ -1,25 +1,27 @@
-import 'reflect-metadata';
-import { port, typeOrmConfig } from './constants';
-import app, { redis } from './services/express';
 import { ApolloServer } from 'apollo-server-express';
+import 'dotenv-safe/config';
+import path from 'path';
+import 'reflect-metadata';
 import { buildSchema } from 'type-graphql';
+import { createConnection } from 'typeorm';
+import { port } from './constants';
+import { Post } from './entities/Post.entity';
+import { Updoot } from './entities/Updoot.entiny';
+import { User } from './entities/User.entity';
 import { PostResolver } from './resolvers/Post.resolver';
 import { UserResolver } from './resolvers/User.resolver';
-import { createConnection } from 'typeorm';
-import { User } from './entities/User.entity';
-import { Post } from './entities/Post.entity';
-import path from 'path';
-import { Updoot } from './entities/Updoot.entiny';
-import { createUserLoader } from './utils/createUserLoader';
+import app, { redis } from './services/express';
 import { createUpdootLoader } from './utils/createUpdootLoader';
+import { createUserLoader } from './utils/createUserLoader';
 
 // main function
 const main = async () => {
   // connect to DB
   const conn = await createConnection({
-    ...typeOrmConfig,
-    logging: true,
-    synchronize: true,
+    type: 'postgres',
+    url: process.env.DATABASE_URL,
+    // logging: true,
+    // synchronize: true,
     migrations: [path.join(__dirname, './migrations/*')],
     entities: [User, Post, Updoot],
   });
