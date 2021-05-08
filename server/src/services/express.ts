@@ -4,7 +4,7 @@ import express from 'express';
 import session from 'express-session';
 import i18n from 'i18n';
 import Redis from 'ioredis';
-import { cookieName, maxAge, __prod__ } from '../constants';
+import { cookieName, maxAge, secret, __prod__ } from '../constants';
 
 const RedisStore = connectRedis(session);
 export const redis: any = new Redis(process.env.REDIS);
@@ -43,7 +43,7 @@ app.use(
       secure: __prod__, // will work only in https,
     },
     resave: false,
-    secret: process.env.SESSION_SECRET,
+    secret,
   }),
 );
 

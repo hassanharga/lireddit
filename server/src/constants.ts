@@ -4,6 +4,7 @@ export const port = process.env.PORT || 3001;
 
 export const maxAge = 1000 * 60 * 60 * 24 * 365 * 10; // 10 years;
 export const cookieName = 'qid';
+export const secret = process.env.SESSION_SECRET || 'hassan';
 
 export const changePasswordUrl = `${process.env.ORIGIN}/change-password`;
 export const changePasswordPrefix = 'change-password:';
