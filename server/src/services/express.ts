@@ -20,7 +20,7 @@ i18n.configure({
 });
 
 // if we r using server like nginx we will set this
-// app.set('proxy', 1);
+// app.set('trust proxy', 1);
 
 app.use(
   cors({
