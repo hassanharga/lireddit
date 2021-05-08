@@ -9,8 +9,8 @@ const EditDeletePostButtons: React.FC<{ id: number; creatorId: number }> = ({
   id,
   creatorId,
 }) => {
-  const [, deletePost] = useDeletePostMutation();
-  const [{ data: currentUser }] = useMeQuery();
+  const [deletePost] = useDeletePostMutation();
+  const { data: currentUser } = useMeQuery();
 
   return (
     <>
@@ -29,7 +29,12 @@ const EditDeletePostButtons: React.FC<{ id: number; creatorId: number }> = ({
             icon={<DeleteIcon />}
             onClick={async () => {
               await deletePost({
-                id,
+                variables: { id },
+                update: (cache) => {
+                  cache.evict({
+                    fieldName: `Post:${id}`,
+                  });
+                },
               });
             }}
           />

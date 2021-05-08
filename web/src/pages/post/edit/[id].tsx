@@ -1,20 +1,19 @@
 import { Box, Button } from '@chakra-ui/core';
 import { Form, Formik } from 'formik';
-import { withUrqlClient } from 'next-urql';
 import router from 'next/router';
 import React from 'react';
 import InputField from '../../../components/Form/InputField';
 import Layout from '../../../components/Layout';
 import { useUpdatePostMutation } from '../../../generated/graphql';
-import { createUrqlClient } from '../../../utils/createUrqlClient';
 import { useGetPostFromUrl } from '../../../utils/useGetPostFromUrl';
+import { withApollo } from '../../../utils/withApollo';
 
 const EditPost = () => {
-  const [{ data, fetching }] = useGetPostFromUrl();
-  const [, updatePost] = useUpdatePostMutation();
+  const { data, loading } = useGetPostFromUrl();
+  const [updatePost] = useUpdatePostMutation();
   return (
     <Layout variant='small'>
-      {fetching ? (
+      {loading ? (
         <div>loading...</div>
       ) : !data?.post ? (
         <Box>Could not find the post</Box>
@@ -27,11 +26,10 @@ const EditPost = () => {
             }}
             onSubmit={async (values) => {
               if (data.post?.id) {
-                const { error } = await updatePost({
-                  ...values,
-                  id: data.post.id,
+                const { errors } = await updatePost({
+                  variables: { ...values, id: data.post.id },
                 });
-                if (!error) {
+                if (!errors) {
                   router.back();
                 }
               }
@@ -66,4 +64,4 @@ const EditPost = () => {
   );
 };
 
-export default withUrqlClient(createUrqlClient)(EditPost);
+export default withApollo({ ssr: false })(EditPost);

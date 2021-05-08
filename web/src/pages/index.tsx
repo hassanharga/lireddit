@@ -1,26 +1,51 @@
 import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/core';
-import { withUrqlClient } from 'next-urql';
 import NextLink from 'next/link';
-import React, { useState } from 'react';
+import React from 'react';
 import EditDeletePostButtons from '../components/EditDeletePostButtons';
 import Layout from '../components/Layout';
 import UpdootSection from '../components/UpdootSection';
 import routes from '../constants/routes';
-import { usePostsQuery } from '../generated/graphql';
-import { createUrqlClient } from '../utils/createUrqlClient';
+import { PostsQuery, usePostsQuery } from '../generated/graphql';
+import { withApollo } from '../utils/withApollo';
 
 const Index = () => {
-  const [variables, setVariables] = useState({
-    limit: 10,
-    cursor: null as null | string,
+  const { data, loading, fetchMore, variables } = usePostsQuery({
+    variables: {
+      limit: 10,
+      cursor: null,
+    },
+    notifyOnNetworkStatusChange: true,
   });
-  const [{ data, fetching }] = usePostsQuery({
-    variables,
-  });
+
+  const fetchMoreHandler = async (data: any) => {
+    await fetchMore({
+      variables: {
+        limit: variables!.limit,
+        cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+      },
+      // it's deprecated
+      // updateQuery: (previousValues, { fetchMoreResult }): PostsQuery => {
+      //   if (!fetchMoreResult) {
+      //     return previousValues as PostsQuery;
+      //   }
+      //   return {
+      //     __typename: 'Query',
+      //     posts: {
+      //       __typename: 'PaginatedPosts',
+      //       hasMore: (fetchMoreResult as PostsQuery).posts.hasMore,
+      //       posts: [
+      //         ...(previousValues as PostsQuery).posts.posts,
+      //         ...(fetchMoreResult as PostsQuery).posts.posts,
+      //       ],
+      //     },
+      //   };
+      // },
+    });
+  };
 
   return (
     <Layout>
-      {!data && fetching ? (
+      {!data && loading ? (
         <div>loading....</div>
       ) : (
         <Stack spacing={8} css={{ margin: '20px 0' }}>
@@ -60,12 +85,9 @@ const Index = () => {
         <Flex>
           <Button
             onClick={() => {
-              setVariables({
-                ...variables,
-                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
-              });
+              fetchMoreHandler(data);
             }}
-            isLoading={fetching}
+            isLoading={loading}
             m='auto'
             my={8}
           >
@@ -77,4 +99,4 @@ const Index = () => {
   );
 };
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Index);
+export default withApollo({ ssr: true })(Index);
